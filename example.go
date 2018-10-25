@@ -1,6 +1,6 @@
 package log
 
 func main() {
-	BuildLogger().UseSeq("", "")
+	BuildLogger("").UseSeq("", "")
 	Error("", nil)
 }
