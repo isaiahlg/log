@@ -2,16 +2,18 @@ package seq
 
 import (
 	"net/http"
-	"github.com/fatih/structs"
+	"runtime"
 	"time"
+
+	"github.com/fatih/structs"
 )
 
-type SeqHook struct{
+type SeqHook struct {
 	BaseUrl string
-	ApiKey string
+	ApiKey  string
 }
 
-type event struct{
+type event struct {
 	Timestamp       time.Time
 	Level           string
 	MessageTemplate string
@@ -21,28 +23,40 @@ type event struct{
 
 type seqEvent []event
 
-func (seqhook *SeqHook) Fatal(msg string, s interface{}){
+func (seqhook *SeqHook) Fatal(msg string, s interface{}) {
 	seqhook.Error(msg, s)
 	panic(msg)
 }
 
-func (seqhook *SeqHook) Error(msg string, s interface{}){
+func (seqhook *SeqHook) Error(msg string, s interface{}) {
 	var m map[string]interface{}
 	if s != nil {
-		m = structs.Map(s)
+		switch t := s.(type) {
+		case string:
+			m = make(map[string]interface{})
+			v := s.(string)
+			m["key"] = v
+
+		default:
+			println(t)
+			m = structs.Map(s)
+		}
 	}
+
+	trace := make([]byte, 1024)
+	runtime.Stack(trace, true)
 
 	event := event{
 		Timestamp:       time.Now().UTC(),
 		Level:           "Error",
 		MessageTemplate: msg,
 		Properties:      m,
-		Exception:       "",
+		Exception:       string(trace),
 	}
 	seqhook.log(event)
 }
 
-func (seqhook *SeqHook) log(ev event){
+func (seqhook *SeqHook) log(ev event) {
 	var httpClient = &http.Client{
 		Transport: &http.Transport{
 			TLSHandshakeTimeout: 30 * time.Second,

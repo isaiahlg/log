@@ -4,6 +4,7 @@ import (
 	"github.com/muhoro/log/seq"
 )
 
+
 type hook interface {
 	Error(msg string, s interface{})
 	Fatal(msg string, s interface{})
