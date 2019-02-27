@@ -23,25 +23,37 @@ type event struct {
 
 type seqEvent []event
 
+func (seqhook *SeqHook) Info(msg string, s interface{}) {
+	m := mapProps(s)
+
+	event := event{
+		Timestamp:       time.Now().UTC(),
+		Level:           "Information",
+		MessageTemplate: msg,
+		Properties:      m,
+	}
+	seqhook.log(event)
+}
+
+func (seqhook *SeqHook) Warning(msg string, s interface{}) {
+	m := mapProps(s)
+
+	event := event{
+		Timestamp:       time.Now().UTC(),
+		Level:           "Warning",
+		MessageTemplate: msg,
+		Properties:      m,
+	}
+	seqhook.log(event)
+}
+
 func (seqhook *SeqHook) Fatal(msg string, s interface{}) {
 	seqhook.Error(msg, s)
 	panic(msg)
 }
 
 func (seqhook *SeqHook) Error(msg string, s interface{}) {
-	var m map[string]interface{}
-	if s != nil {
-		switch t := s.(type) {
-		case string:
-			m = make(map[string]interface{})
-			v := s.(string)
-			m["key"] = v
-
-		default:
-			println(t)
-			m = structs.Map(s)
-		}
-	}
+	m := mapProps(s)
 
 	trace := make([]byte, 1024)
 	runtime.Stack(trace, true)
@@ -72,4 +84,21 @@ func (seqhook *SeqHook) log(ev event) {
 	ee = append(ee, ev)
 
 	sc.send(&ee, httpClient)
+}
+
+func mapProps(s interface{}) map[string]interface{} {
+	var m map[string]interface{}
+	if s != nil {
+		switch t := s.(type) {
+		case string:
+			m = make(map[string]interface{})
+			v := s.(string)
+			m["key"] = v
+
+		default:
+			println(t)
+			m = structs.Map(s)
+		}
+	}
+	return m
 }
